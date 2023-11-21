@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import Fuse, { FuseResult } from 'fuse.js';
 import { OpensubtitlesClient } from './client/opensubtitles/os.client';
 import { S3StorageStrategy } from '../storage/strategy/s3-storage.strategy';
@@ -27,16 +27,6 @@ export class SubtitleService {
     return fuseResult;
   }
 
-  //TODO: change so it searches on every subtitle site available
-  async downloadOpenSubtitle(fileId: string): Promise<string> {
-    const downloadRequestResponse =
-      await this.opensubtitlesClient.requestDownload(fileId);
-
-    return await this.opensubtitlesClient.downloadSubtitle(
-      downloadRequestResponse.link,
-    );
-  }
-
   async cacheSubtitle(filename: string, content: string) {
     return await this.s3StorageStrategy.uploadFile(filename, content);
   }
@@ -45,20 +35,32 @@ export class SubtitleService {
     fileId: string,
     provider: SubtitleProviders,
   ): Promise<string> {
+    if (!fileId || !provider) {
+      throw new BadRequestException(
+        'Cannot get subtitle: file id or provider is invalid',
+      );
+    }
+
     try {
       const subtitle = await this.s3StorageStrategy.getFile(fileId);
       return subtitle;
     } catch (error) {
       Logger.debug(error.message);
 
+      let file: string;
+      //TODO: add more providers
       switch (provider) {
         case SubtitleProviders.Opensubtitles:
-          const file = await this.downloadOpenSubtitle(fileId);
+          const downloadRequestResponse =
+            await this.opensubtitlesClient.requestDownload(fileId);
 
-          this.cacheSubtitle(fileId, file);
-
-          return file;
+          file = await this.opensubtitlesClient.downloadSubtitle(
+            downloadRequestResponse.link,
+          );
       }
+
+      this.cacheSubtitle(fileId, file);
+      return file;
     }
   }
 }
