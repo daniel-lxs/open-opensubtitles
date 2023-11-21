@@ -9,7 +9,7 @@ import {
   LoginResponse,
   SearchParams,
   SubtitleSearchResponse,
-} from './interface';
+} from './model';
 import { ConfigService } from '@nestjs/config';
 import { Subtitle } from '../../model/subtitle.interface';
 import { SearchOptions, SubtitleProviders } from '../../model';
