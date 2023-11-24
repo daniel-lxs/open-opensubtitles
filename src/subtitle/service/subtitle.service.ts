@@ -1,24 +1,31 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import Fuse, { FuseResult } from 'fuse.js';
-import { OpensubtitlesClient } from './client/opensubtitles/os.client';
-import { S3StorageStrategy } from '../storage/strategy/s3-storage.strategy';
-import { Subtitle, SubtitleProviders } from './model';
-import { SearchOptions } from './model/search-options.interface';
+import { OpensubtitlesService } from './opensubtitles/os.service';
+import { S3StorageStrategy } from '../../storage/strategy/s3-storage.strategy';
+import { Subtitle, SubtitleProviders } from '../model';
+import { SearchOptions } from '../model/search-options.interface';
+import { Addic7edService } from './addic7ted/addic7ed.service';
 
 @Injectable()
 export class SubtitleService {
   constructor(
-    private readonly opensubtitlesClient: OpensubtitlesClient,
+    private readonly opensubtitlesClient: OpensubtitlesService,
     private readonly s3StorageStrategy: S3StorageStrategy,
+    private readonly addic7edService: Addic7edService,
   ) {}
 
-  async searchOpenSubtitles(
+  async searchSubtitles(
     searchOptions: SearchOptions,
   ): Promise<FuseResult<Subtitle>[]> {
-    const osSearchResults =
-      await this.opensubtitlesClient.searchSubtitles(searchOptions);
+    const opensubtitlesPromise =
+      this.opensubtitlesClient.searchSubtitles(searchOptions);
 
-    const fuse = new Fuse(osSearchResults, {
+    const addic7edPromise = this.addic7edService.searchSubtitles(searchOptions);
+
+    const results = await Promise.all([opensubtitlesPromise, addic7edPromise]);
+    const combinedResults = results.flat();
+
+    const fuse = new Fuse(combinedResults, {
       keys: ['releaseName', 'comments'],
       ignoreLocation: true,
     });
@@ -45,8 +52,6 @@ export class SubtitleService {
       const subtitle = await this.s3StorageStrategy.getFile(fileId);
       return subtitle;
     } catch (error) {
-      Logger.debug(error.message);
-
       let file: string;
       //TODO: add more providers
       switch (provider) {

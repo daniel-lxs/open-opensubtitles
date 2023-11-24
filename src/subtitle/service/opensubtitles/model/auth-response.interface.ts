@@ -1,4 +1,4 @@
-export interface LoginResponse {
+export interface AuthResponse {
   user: User;
   base_url: string;
   token: string;

@@ -1,3 +1,5 @@
+import { FeatureType } from '../../../model/';
+
 export interface SubtitleSearchResponse {
   total_pages: number;
   total_count: number;
@@ -52,11 +54,6 @@ export interface FeatureDetails {
   parent_title?: string;
   parent_tmdb_id?: number;
   parent_feature_id?: number;
-}
-
-export enum FeatureType {
-  Movie = 'Movie',
-  Episode = 'Episode',
 }
 
 export interface File {

@@ -4,4 +4,6 @@ export interface SearchParams extends Record<string, string> {
   type: string;
   year: string;
   page: string;
+  episode_number?: string;
+  season_number?: string;
 }

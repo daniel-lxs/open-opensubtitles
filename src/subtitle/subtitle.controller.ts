@@ -7,7 +7,7 @@ import {
   StreamableFile,
   Post,
 } from '@nestjs/common';
-import { SubtitleService } from './subtitle.service';
+import { SubtitleService } from './service/subtitle.service';
 import type { Response } from 'express';
 import { SearchOptions, SubtitleProviders } from './model';
 
@@ -36,6 +36,6 @@ export class SubtitleController {
   //TODO: validation
   @Post('search')
   async searchSubtitles(@Body() searchOptions: SearchOptions) {
-    return await this.subtitleService.searchOpenSubtitles(searchOptions);
+    return await this.subtitleService.searchSubtitles(searchOptions);
   }
 }

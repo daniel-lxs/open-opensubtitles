@@ -2,7 +2,7 @@ import { FeatureType } from './feature-type.enum';
 
 interface BaseSearchOptions {
   imdbId: string;
-  languages: string | string[];
+  language: string;
   year: number;
   query: string;
 }
