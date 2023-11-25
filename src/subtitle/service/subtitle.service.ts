@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import Fuse, { FuseResult } from 'fuse.js';
 import { OpensubtitlesService } from './opensubtitles/os.service';
 import { S3StorageStrategy } from '../../storage/strategy/s3-storage.strategy';
@@ -56,14 +56,12 @@ export class SubtitleService {
       //TODO: add more providers
       switch (provider) {
         case SubtitleProviders.Opensubtitles:
-          const downloadRequestResponse =
-            await this.opensubtitlesClient.requestDownload(fileId);
-
-          file = await this.opensubtitlesClient.downloadSubtitle(
-            downloadRequestResponse.link,
-          );
+          file = await this.opensubtitlesClient.downloadSubtitle(fileId);
+        case SubtitleProviders.Addic7ted:
+          file = await this.addic7edService.downloadSubtitle(fileId);
       }
 
+      Logger.debug(fileId);
       this.cacheSubtitle(fileId, file);
       return file;
     }

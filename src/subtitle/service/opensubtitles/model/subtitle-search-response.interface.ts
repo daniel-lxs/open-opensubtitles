@@ -10,7 +10,7 @@ export interface SubtitleSearchResponse {
 
 export interface Datum {
   id: string;
-  type: Type;
+  type: 'subtitle';
   attributes: Attributes;
 }
 
@@ -72,8 +72,4 @@ export interface Uploader {
   uploader_id: number | null;
   name: string;
   rank: string;
-}
-
-export enum Type {
-  Subtitle = 'subtitle',
 }

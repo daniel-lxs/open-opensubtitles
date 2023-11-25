@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SearchResponse } from './model/search-response.interface';
 import { SubtitleResponse } from './model/subtitle-response.interface';
@@ -9,10 +9,13 @@ import { TvdbService } from '../tvdb/tvdb.service';
 
 @Injectable()
 export class Addic7edService {
+  private baseUrl: string;
   constructor(
     private readonly configService: ConfigService,
     private readonly tvdbService: TvdbService,
-  ) {}
+  ) {
+    this.baseUrl = this.configService.getOrThrow('ADICC7ED_API_URL');
+  }
 
   private async getShowByTvdbId(id: string) {
     const baseUrl = this.configService.getOrThrow('ADICC7ED_API_URL');
@@ -74,12 +77,29 @@ export class Addic7edService {
     );
 
     if (searchOptions.featureType === FeatureType.Episode) {
-      const baseUrl = this.configService.getOrThrow('ADICC7ED_API_URL');
       const response = await axios.get<SubtitleResponse>(
-        `${baseUrl}/subtitles/get/${addic7edShowData.id}/${searchOptions.seasonNumber}/${searchOptions.episodeNumber}/${searchOptions.language}`,
+        `${this.baseUrl}/subtitles/get/${addic7edShowData.id}/${searchOptions.seasonNumber}/${searchOptions.episodeNumber}/${searchOptions.language}`,
       );
       const mappedSubtitles = this.mapSubtitleResponseToSubtitle(response.data);
       return mappedSubtitles;
+    }
+  }
+
+  async downloadSubtitle(fileId: string) {
+    try {
+      const response = await axios.get<string>(
+        `${this.baseUrl}/subtitles/download/${fileId}`,
+        {
+          responseType: 'text',
+        },
+      );
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      } else {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }
