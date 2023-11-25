@@ -125,42 +125,59 @@ export class OpensubtitlesService {
   }
 
   async searchSubtitles(searchOptions: SearchOptions): Promise<Subtitle[]> {
-    const searchParams: SearchParams = {
-      imdb_id: searchOptions.imdbId.split('tt')[1],
-      languages: searchOptions.language,
-      type: searchOptions.featureType,
-      year: searchOptions.year.toString(),
-      page: '1', //TODO: Handle pagination inside client
-    };
-
-    if (searchOptions.featureType === FeatureType.Episode) {
-      searchParams.season_number = searchOptions.seasonNumber.toString();
-      searchParams.episode_number = searchOptions.episodeNumber.toString();
-    }
-
     const headers = this.getHeaders();
+    const subtitles: Subtitle[] = [];
 
     try {
-      const urlWithParams = `${this.baseApiUrl}/subtitles?${new URLSearchParams(
-        searchParams,
-      )}`;
+      let currentPage = 1;
+      let totalPages = 1; // Initialize totalPages to a non-zero value to enter the loop
 
-      const response: AxiosResponse<SubtitleSearchResponse> = await axios.get(
-        urlWithParams,
-        { headers },
-      );
+      while (currentPage <= totalPages) {
+        const searchParams: SearchParams = {
+          imdb_id: searchOptions.imdbId.split('tt')[1],
+          languages: searchOptions.language,
+          type: searchOptions.featureType,
+          year: searchOptions.year.toString(),
+          page: currentPage.toString(),
+        };
 
-      if (response.status >= 200 && response.status < 300) {
-        return this.mapSearchResponseToSubtitle(response.data);
-      } else {
-        throw new Error(`Request failed with status ${response.status}`);
+        if (searchOptions.featureType === FeatureType.Episode) {
+          searchParams.season_number = searchOptions.seasonNumber.toString();
+          searchParams.episode_number = searchOptions.episodeNumber.toString();
+        }
+
+        const urlWithParams = `${
+          this.baseApiUrl
+        }/subtitles?${new URLSearchParams(searchParams)}`;
+
+        const response: AxiosResponse<SubtitleSearchResponse> = await axios.get(
+          urlWithParams,
+          { headers },
+        );
+
+        if (response.status >= 200 && response.status < 300) {
+          // Append the subtitles from the current page to the result array
+          subtitles.push(...this.mapSearchResponseToSubtitle(response.data));
+
+          // Update totalPages based on the response
+          totalPages = response.data.total_pages;
+
+          // Move to the next page
+          currentPage++;
+        } else {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
       }
+
+      return subtitles;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
   }
 
-  async requestDownload(fileId: string): Promise<DownloadRequestResponse> {
+  private async requestDownload(
+    fileId: string,
+  ): Promise<DownloadRequestResponse> {
     await this.authenticate();
     const headers = {
       ...this.getHeaders(),
@@ -189,9 +206,10 @@ export class OpensubtitlesService {
     }
   }
 
-  async downloadSubtitle(link: string): Promise<string> {
+  async downloadSubtitle(fileId: string): Promise<string> {
     try {
-      const response: AxiosResponse<string> = await axios.get(link, {
+      const { link } = await this.requestDownload(fileId);
+      const response = await axios.get<string>(link, {
         responseType: 'text',
       });
       if (response.status >= 200 && response.status < 300) {
