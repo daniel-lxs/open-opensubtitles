@@ -6,9 +6,10 @@ import { SubtitleController } from './subtitle.controller';
 import { ConfigModule } from '@nestjs/config';
 import { Addic7edService } from './service/addic7ted/addic7ed.service';
 import { TvdbService } from './service/tvdb/tvdb.service';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
-  imports: [ConfigModule, StorageModule],
+  imports: [CacheModule.register({ ttl: 60 }), ConfigModule, StorageModule],
   controllers: [SubtitleController],
   providers: [
     SubtitleService,

@@ -6,10 +6,12 @@ import {
   Res,
   StreamableFile,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { SubtitleService } from './service/subtitle.service';
 import type { Response } from 'express';
 import { SearchOptions, SubtitleProviders } from './model';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @Controller('subtitle')
 export class SubtitleController {
@@ -35,6 +37,7 @@ export class SubtitleController {
 
   //TODO: validation
   @Post('search')
+  @UseInterceptors(CacheInterceptor)
   async searchSubtitles(@Body() searchOptions: SearchOptions) {
     return await this.subtitleService.searchSubtitles(searchOptions);
   }
